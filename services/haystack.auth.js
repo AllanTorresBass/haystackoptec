@@ -1,38 +1,29 @@
-/*eslint-disable*/
-import {
-	AuthInterface,
-	EncryptorInterface,
-	SchemeInterface,
-	SpecificationInterface,
-	UserInterface,
-} from "./interfaces";
 import axios from "axios";
 import Parser from "./parser";
 import Specification from "./specification";
 import { decode } from "base-64";
 import ScramHeader from "./scram.header";
 
-export default class HaystackAuth implements AuthInterface {
-	host: string;
-	encryptor: EncryptorInterface;
+export default class HaystackAuth {
+	host;
+	encryptor;
 
-	public constructor(host: string, encryptor: EncryptorInterface) {
+	constructor(host, encryptor) {
 		this.host = host;
 		this.encryptor = encryptor;
 	}
 
-	public getStringToBase64UriUTF8(string: string): string {
+	getStringToBase64UriUTF8(string) {
 		return this.encryptor.getBase64QueryString(string);
 	}
 
-	public getAuthToken(header: string) {
-		const data: ScramHeader = this.decodeData(header);
+	getAuthToken(header) {
+		const data = this.decodeData(header);
 
-		// @ts-ignore
 		return data.authToken;
 	}
 
-	public async processSignIn(user: UserInterface) {
+	async processSignIn(user) {
 		console.log("Entre en processSignIn in auth service");
 		try {
 			const headerHello = `HELLO username=${this.getStringToBase64UriUTF8(
@@ -51,7 +42,7 @@ export default class HaystackAuth implements AuthInterface {
 			throw new Error(
 				"Failed message with code different to 401 in Hello Message"
 			);
-		} catch (error: any) {
+		} catch (error) {
 			if (error.response && error.response.status === 401) {
 				const scheme = this.parse3WAuth(
 					error.response.headers["www-authenticate"]
@@ -75,7 +66,7 @@ export default class HaystackAuth implements AuthInterface {
 					throw new Error(
 						"Failed message with code different to 401 in First Message"
 					);
-				} catch (error: any) {
+				} catch (error) {
 					if (error.response && error.response.status === 401) {
 						const messageScheme = this.parse3WAuth(
 							error.response.headers["www-authenticate"]
@@ -105,7 +96,7 @@ export default class HaystackAuth implements AuthInterface {
 
 								return { token: authToken };
 							}
-						} catch (error: any) {
+						} catch (error) {
 							throw new Error("Failed last message: " + error.response.text);
 						}
 					}
@@ -114,7 +105,7 @@ export default class HaystackAuth implements AuthInterface {
 		}
 	}
 
-	public async processIIISignIn(user: UserInterface) {
+	async processIIISignIn(user) {
 		console.log("Entre en processSignIn in auth service");
 		const headerHello = `HELLO username=${this.getStringToBase64UriUTF8(
 			user.getUsername()
@@ -148,27 +139,26 @@ export default class HaystackAuth implements AuthInterface {
 		return lastHeader;
 	}
 
-	public async processSignOut(): Promise<void> {
+	async processSignOut() {
 		try {
 			await axios.get(`${this.host}/user/logout`);
-		} catch (error: any) {
+		} catch (error) {
 			throw new Error("Failed last message: " + error.response.text);
 		}
 	}
 
-	public parse3WAuth(header: string): SchemeInterface | null {
+	parse3WAuth(header) {
 		const parser = new Parser(header);
 
 		return parser.nextScheme();
 	}
 
-	public decodeData(string: string): object {
-		const data: object = {};
+	decodeData(string) {
+		const data = {};
 
 		string.split(",").forEach(function (token) {
 			const n = token.indexOf("=");
 			if (n > 0) {
-				// @ts-ignore
 				data[token.substring(0, n)] = token.substring(n + 1);
 			}
 		});
@@ -176,11 +166,8 @@ export default class HaystackAuth implements AuthInterface {
 		return data;
 	}
 
-	public getHashSpecification(
-		hashType: string,
-		encryptor: EncryptorInterface
-	): SpecificationInterface {
-		let specification: SpecificationInterface;
+	getHashSpecification(hashType, encryptor) {
+		let specification;
 
 		switch (hashType.toLowerCase()) {
 			case "sha-1":
@@ -196,12 +183,7 @@ export default class HaystackAuth implements AuthInterface {
 		return specification;
 	}
 
-	public getScramHeader(
-		user: UserInterface,
-		scheme: SchemeInterface | null,
-		encryptor: EncryptorInterface,
-		messageHeader: string = "n,,"
-	) {
+	getScramHeader(user, scheme, encryptor, messageHeader = "n,,") {
 		const messageNonce = encryptor.getNonce(24);
 		const headerBare = "n=" + user.getUsername() + ",r=" + messageNonce;
 		const headerMessage = messageHeader + headerBare;
@@ -216,14 +198,14 @@ export default class HaystackAuth implements AuthInterface {
 		return [header, headerBare];
 	}
 
-	public getAuthHeader(
-		user: UserInterface,
-		schema: SchemeInterface | null,
-		decodeHandler: Function,
-		encryptor: EncryptorInterface,
-		headerBare: string,
-		messageHeader: string = "n,,"
-	): string {
+	getAuthHeader(
+		user,
+		schema,
+		decodeHandler,
+		encryptor,
+		headerBare,
+		messageHeader = "n,,"
+	) {
 		const hashType = schema?.params.hash;
 		const hashSpecification = this.getHashSpecification(
 			hashType ?? "",
