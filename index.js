@@ -1,6 +1,7 @@
 import decode from "base-64";
 import axios from "axios";
 var dataQuery3;
+var handshakeToken;
 class Encryptor {
 	Base64Table =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -830,7 +831,10 @@ class HaystackAuth {
 				const scheme = this.parse3WAuth(
 					error.response.headers["www-authenticate"]
 				);
-				console.log("line 829", scheme);
+				handshakeToken = error.response.headers["www-authenticate"]
+					.split(" ")[1]
+					.slice(0, -1);
+				console.log("line 829", error.response.headers["www-authenticate"]);
 				const [header, headerBare] = this.getScramHeader(
 					user,
 					scheme,
@@ -862,13 +866,8 @@ class HaystackAuth {
 							error.response.headers["www-authenticate"]
 						);
 						console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-						console.log(
-							"messageScheme ",
-							error.response.headers["www-authenticate"]
-								.split(" ")[1]
-								.split("=")[1]
-								.slice(0, -1)
-						);
+
+						console.log("verify ", handshakeToken);
 						dataQuery3 = error.response.headers["www-authenticate"]
 							.split(" ")[1]
 							.split("=")[1]
@@ -958,19 +957,19 @@ class HaystackAuth {
 		const headerData = encryptor.getBase64QueryString(headerMessage);
 		const token = scheme?.param("handshakeToken");
 		let header = scheme?.getName() + " data=" + headerData;
-		console.log("messageNonce", messageNonce);
-		console.log("headerBare", headerBare);
+		// console.log("messageNonce", messageNonce);
+		// console.log("headerBare", headerBare);
 
-		console.log("getScramHeader 942");
-		console.log("headerMessage ", headerMessage);
-		console.log("headerData ", headerData);
-		console.log("token ", token);
-		console.log("header ", header);
+		// console.log("getScramHeader 942");
+		// console.log("headerMessage ", headerMessage);
+		// console.log("headerData ", headerData);
+		// console.log("token ", token);
+		// console.log("header ", header);
 		if (token != null) {
 			header += ", handshakeToken=" + token;
 		}
-
-		return [(header += ", handshakeToken=YXRvcnJlcw"), headerBare];
+		console.log("handshakeToken", handshakeToken);
+		return [(header += "," + handshakeToken), headerBare];
 	}
 
 	getAuthHeader(
@@ -1021,7 +1020,7 @@ class HaystackAuth {
 		const token = schema?.param("handshakeToken");
 		let header = "" + schema?.name + " data=" + headerFinalData;
 
-		header += ", handshakeToken=YXRvcnJlcw";
+		header += "," + handshakeToken;
 
 		return header;
 	}
