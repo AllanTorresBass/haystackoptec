@@ -1,77 +1,23 @@
-import decode from "base-64";
 import axios from "axios";
 var dataQuery3;
 var handshakeToken;
-class Encryptor {
+export class Encryptor {
 	Base64Table =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-	sha256K = new Array(
-		1116352408,
-		1899447441,
-		-1245643825,
-		-373957723,
-		961987163,
-		1508970993,
-		-1841331548,
-		-1424204075,
-		-670586216,
-		310598401,
-		607225278,
-		1426881987,
-		1925078388,
-		-2132889090,
-		-1680079193,
-		-1046744716,
-		-459576895,
-		-272742522,
-		264347078,
-		604807628,
-		770255983,
-		1249150122,
-		1555081692,
-		1996064986,
-		-1740746414,
-		-1473132947,
-		-1341970488,
-		-1084653625,
-		-958395405,
-		-710438585,
-		113926993,
-		338241895,
-		666307205,
-		773529912,
-		1294757372,
-		1396182291,
-		1695183700,
-		1986661051,
-		-2117940946,
-		-1838011259,
-		-1564481375,
-		-1474664885,
-		-1035236496,
-		-949202525,
-		-778901479,
-		-694614492,
-		-200395387,
-		275423344,
-		430227734,
-		506948616,
-		659060556,
-		883997877,
-		958139571,
-		1322822218,
-		1537002063,
-		1747873779,
-		1955562222,
-		2024104815,
-		-2067236844,
-		-1933114872,
-		-1866530822,
-		-1538233109,
-		-1090935817,
-		-965641998
-	);
+	sha256K = [
+		1116352408, 1899447441, -1245643825, -373957723, 961987163, 1508970993,
+		-1841331548, -1424204075, -670586216, 310598401, 607225278, 1426881987,
+		1925078388, -2132889090, -1680079193, -1046744716, -459576895, -272742522,
+		264347078, 604807628, 770255983, 1249150122, 1555081692, 1996064986,
+		-1740746414, -1473132947, -1341970488, -1084653625, -958395405, -710438585,
+		113926993, 338241895, 666307205, 773529912, 1294757372, 1396182291,
+		1695183700, 1986661051, -2117940946, -1838011259, -1564481375, -1474664885,
+		-1035236496, -949202525, -778901479, -694614492, -200395387, 275423344,
+		430227734, 506948616, 659060556, 883997877, 958139571, 1322822218,
+		1537002063, 1747873779, 1955562222, 2024104815, -2067236844, -1933114872,
+		-1866530822, -1538233109, -1090935817, -965641998,
+	];
 
 	convertStringToBigEndian(string) {
 		const output = Array(string.length >> 2);
@@ -498,7 +444,7 @@ class Encryptor {
 	}
 }
 
-class User {
+export class User {
 	constructor(username, password) {
 		this.username = username;
 		this.password = password;
@@ -538,7 +484,7 @@ class Scheme {
 	param(name) {
 		let value = null;
 		const params = this.params;
-		console.log("line 539 scheme params", params);
+
 		Object.keys(params).forEach(function (key) {
 			if (key.toLowerCase() === name.toLowerCase()) {
 				value = params[key];
@@ -549,7 +495,6 @@ class Scheme {
 	}
 
 	getName() {
-		console.log("Scheme");
 		return this.name;
 	}
 }
@@ -563,7 +508,6 @@ class Parser {
 	EOF = -1;
 
 	constructor(header) {
-		console.log("Class Parser Constructor");
 		this.header = header;
 		this.position = -2;
 		this.current = -1;
@@ -659,7 +603,7 @@ class Parser {
 			"=".charCodeAt(0),
 			",".charCodeAt(0),
 		];
-		console.log("Parse token line 657", terms);
+
 		const start = this.position;
 
 		while (true) {
@@ -677,10 +621,7 @@ class Parser {
 
 			this.consume();
 		}
-		console.log(
-			"Parse token line 689",
-			this.header.substring(start, this.position)
-		);
+
 		return this.header.substring(start, this.position);
 	}
 
@@ -742,7 +683,6 @@ class Parser {
 			}
 
 			if (!this.checkParseAuthParam(params)) {
-				console.log("!this.checkParseAuthParam(params)", params);
 				this.reset(start);
 				break;
 			}
@@ -754,9 +694,6 @@ class Parser {
 	}
 
 	nextScheme() {
-		console.log("nextScheme line 736");
-
-		console.log("line 759");
 		if (this.eof()) {
 			return null;
 		}
@@ -764,7 +701,7 @@ class Parser {
 		if (this.position > 0) {
 			this.commaOws();
 		}
-		console.log("line 766");
+
 		const scheme = new Scheme();
 
 		scheme.name = this.parseToken([
@@ -772,7 +709,7 @@ class Parser {
 			",".charCodeAt(0),
 			-1,
 		]).toLowerCase();
-		console.log("Entro en nextScheme", this.parseAuthParams());
+
 		if (this.current !== " ".charCodeAt(0)) return scheme;
 
 		while (this.current === " ".charCodeAt(0)) this.consume();
@@ -782,7 +719,7 @@ class Parser {
 		return scheme;
 	}
 }
-class HaystackAuth {
+export class HaystackAuth {
 	host;
 	encryptor;
 
@@ -802,7 +739,6 @@ class HaystackAuth {
 	}
 
 	async processSignIn(user) {
-		console.log("Entre en processSignIn in auth service");
 		try {
 			const headerHello = `HELLO username=${this.getStringToBase64UriUTF8(
 				user.getUsername()
@@ -816,7 +752,7 @@ class HaystackAuth {
 					Authorization: headerHello,
 				},
 			});
-			console.log("response query_1: ", query_1);
+
 			throw new Error(
 				"Failed message with code different to 401 in Hello Message"
 			);
@@ -827,7 +763,7 @@ class HaystackAuth {
 					"catch error error.response query 1: ",
 					error.response.statusText
 				);
-				console.log("line 825");
+
 				const scheme = this.parse3WAuth(
 					error.response.headers["www-authenticate"]
 				);
@@ -865,14 +801,12 @@ class HaystackAuth {
 						const messageScheme = this.parse3WAuth(
 							error.response.headers["www-authenticate"]
 						);
-						console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
 
-						console.log("verify ", handshakeToken);
 						dataQuery3 = error.response.headers["www-authenticate"]
 							.split(" ")[1]
 							.split("=")[1]
 							.slice(0, -1);
-						console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+
 						const lastHeader = this.getAuthHeader(
 							user,
 							messageScheme ?? null,
@@ -957,14 +891,7 @@ class HaystackAuth {
 		const headerData = encryptor.getBase64QueryString(headerMessage);
 		const token = scheme?.param("handshakeToken");
 		let header = scheme?.getName() + " data=" + headerData;
-		// console.log("messageNonce", messageNonce);
-		// console.log("headerBare", headerBare);
 
-		// console.log("getScramHeader 942");
-		// console.log("headerMessage ", headerMessage);
-		// console.log("headerData ", headerData);
-		// console.log("token ", token);
-		// console.log("header ", header);
 		if (token != null) {
 			header += ", handshakeToken=" + token;
 		}
